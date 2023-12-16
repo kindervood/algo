@@ -1,0 +1,77 @@
+#include <algorithm>
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+
+struct Node {
+  int len;
+  int suffix;
+  std::unordered_map<char, int> transitions;
+};
+
+class SuffixAutomaton {
+ private:
+  std::vector<Node> nodes_;
+  int last_ = 0;
+
+ public:
+  explicit SuffixAutomaton(const std::string& str) {
+    nodes_.emplace_back();
+    nodes_[0].len = 0;
+    nodes_[0].suffix = -1;
+    for (char c : str) {
+      AddChar(c);
+    }
+  }
+
+  void Clone(int parent, char c, int node, int new_node) {
+    nodes_.emplace_back(nodes_[node]);
+    int clone = static_cast<int>(nodes_.size() - 1);
+    nodes_[clone].len = nodes_[parent].len + 1;
+    while (parent != -1 && nodes_[parent].transitions[c] == node) {
+      nodes_[parent].transitions[c] = clone;
+      parent = nodes_[parent].suffix;
+    }
+    nodes_[node].suffix = clone;
+    nodes_[new_node].suffix = clone;
+  }
+
+  void AddChar(char c) {
+    nodes_.emplace_back();
+    int new_node = static_cast<int>(nodes_.size() - 1);
+    nodes_[new_node].len = nodes_[last_].len + 1;
+    while (last_ != -1 && !nodes_[last_].transitions.contains(c)) {
+      nodes_[last_].transitions[c] = new_node;
+      last_ = nodes_[last_].suffix;
+    }
+    if (last_ == -1) {
+      nodes_[new_node].suffix = 0;
+    } else {
+      int next = nodes_[last_].transitions[c];
+      if (nodes_[last_].len + 1 == nodes_[next].len) {
+        nodes_[new_node].suffix = next;
+      } else {
+        Clone(last_, c, next, new_node);
+      }
+    }
+    last_ = new_node;
+  }
+
+  void PrintTransitions() {
+    std::cout << nodes_.size() << '\n';
+    for (int i = 0; i < static_cast<int>(nodes_.size()); ++i) {
+      for (auto& [sym, state] : nodes_[i].transitions) {
+        std::cout << i << ' ' << sym << ' ' << state << '\n';
+      }
+    }
+  }
+};
+
+int main() {
+  std::string str;
+  std::cin >> str;
+  SuffixAutomaton automaton(str);
+  automaton.PrintTransitions();
+  return 0;
+}
